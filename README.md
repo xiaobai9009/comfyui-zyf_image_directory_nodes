@@ -1,6 +1,9 @@
 # ComfyUI Image Directory Tools
 
 一个功能强大的ComfyUI自定义节点集合，提供高级图像目录加载、批量保存和预览功能，支持复杂的文件管理和工作流自动化。
+![剪贴板图片 (1)](https://github.com/user-attachments/assets/8dc19371-74cd-42ae-9140-3a51f138ccc5)
+
+
 
 ## 功能特点
 
@@ -44,10 +47,10 @@
 
 ## 安装方法
 
-1. 确保已安装ComfyUI
+1. 确保已安装ComfyUI,无需安装额外依赖
 2. 克隆本仓库到ComfyUI的`custom_nodes`目录：
 ```bash
-git clone https://github.com/yourusername/comfyui-image-directory-tools.git custom_nodes/zyf_image_directory_nodes
+git clone https://github.com/xiaobai9009/comfyui-zyf_image_directory_nodes.git
 ```
 3. 重启ComfyUI
 4. 在节点面板的"目录加载与保存"分类下找到新节点
