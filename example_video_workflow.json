@@ -1,0 +1,118 @@
+{
+  "last_node_id": 15,
+  "last_link_id": 20,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "VideoDirectoryLoader",
+      "pos": [100, 100],
+      "size": [300, 200],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": {
+        "directory_path": "input_videos",
+        "start_index": 0,
+        "load_count": 1,
+        "scale_short_side": 512
+      },
+      "outputs": [
+        { "name": "frames", "type": "IMAGE" },
+        { "name": "fps", "type": "FLOAT" },
+        { "name": "audio", "type": "AUDIO" },
+        { "name": "filename", "type": "STRING" }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "VideoConverterSplitter",
+      "pos": [100, 350],
+      "size": [300, 250],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": {
+        "video_path": "input_videos/long_video.mp4",
+        "output_directory": "temp_segments",
+        "segment_duration": 10,
+        "convert_to_mp4": false,
+        "vfr_to_cfr": true,
+        "insert_keyframe": false,
+        "reduce_fps": 30,
+        "single_run": true
+      },
+      "outputs": [
+        { "name": "output_directory", "type": "STRING" },
+        { "name": "segment_count", "type": "INT" },
+        { "name": "original_fps", "type": "FLOAT" },
+        { "name": "original_filename", "type": "STRING" },
+        { "name": "original_audio_path", "type": "STRING" }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "VideoAutoMerger",
+      "pos": [500, 100],
+      "size": [350, 300],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": {
+        "fps": [1, 1],
+        "trigger_merge_count": 10,
+        "final_filename": "merged_video.mp4",
+        "temp_directory": "temp_segments",
+        "final_directory": "output_videos",
+        "video_codec": "h264",
+        "video_quality": 23,
+        "independent_mode": false,
+        "frames": [1, 0],
+        "audio": [1, 2],
+        "original_audio_path": [2, 4]
+      },
+      "outputs": [
+        { "name": "merged_video_path", "type": "STRING" },
+        { "name": "merge_count", "type": "INT" }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "Primitive_String",
+      "pos": [500, 450],
+      "size": [250, 100],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": {
+        "value": "processed_video"
+      },
+      "outputs": [
+        { "name": "string", "type": "STRING" }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "ShowText",
+      "pos": [900, 100],
+      "size": [300, 150],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": {
+        "text": [3, 0]
+      },
+      "outputs": []
+    }
+  ],
+  "links": [
+    [1, 1, 0, 3, 6],
+    [2, 1, 1, 3, 0],
+    [3, 1, 2, 3, 7],
+    [4, 2, 4, 3, 8],
+    [5, 3, 0, 5, 0]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {},
+  "version": 0.4
+}
