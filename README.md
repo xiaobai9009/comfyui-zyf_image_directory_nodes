@@ -1,6 +1,8 @@
 # ComfyUI 图像与视频目录加载保存节点
 
 一套完整的 ComfyUI 自定义节点，用于批量处理图像和视频，支持目录加载、视频分割、自动合并等功能，特别适合长视频分段处理和批量图像处理工作流。
+<img width="2105" height="1005" alt="4cd99d75ea041a90" src="https://github.com/user-attachments/assets/d1e2ebd8-e209-4529-85da-9e98edb4c9ba" />
+<img width="2027" height="1028" alt="df6f072c5c6b7a37" src="https://github.com/user-attachments/assets/3e4afbf6-33b6-479e-bf9c-381828ecf6d3" />
 
 ## 📦 节点列表
 
@@ -530,3 +532,4 @@ MIT License
 ---
 
 **提示：** 建议先阅读 [智能关键帧检测说明](docs/智能关键帧检测说明.md) 和 [原音频处理功能说明](docs/原音频处理功能说明.md) 了解核心功能。
+
