@@ -1,0 +1,62 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+build/
+dist/
+*.egg-info/
+
+# Cache
+.cache/
+*.cache
+
+# Logs
+logs/
+*.log
+
+# Temporary
+*.tmp
+*.temp
+
+# Test files
+test_*.py
+verify_*.py
+
+# Web
+web/
+!js/
+
+# Documentation
+docs/
+
+# Examples
+example_*.json
+
+# Virtual environment
+venv/
+env/
+
+# Conda
+.conda/
+envs/
+
+# Pip
+pip-wheel-metadata/
+
+# ComfyUI
+ComfyUI/
+comfy_extras/
+config/
