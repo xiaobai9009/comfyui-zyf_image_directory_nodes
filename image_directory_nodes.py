@@ -433,9 +433,14 @@ class ImageDirectorySaver:
                 "覆盖已存在文件": ("BOOLEAN", {"default": False, "tooltip": "当目标位置已存在同名文件时是否覆盖。开启后将直接覆盖已存在的文件；关闭则跳过已存在的文件，避免数据丢失。"}),
                 "保存格式": (["原格式", "jpg", "png", "webp"], {"default": "原格式", "tooltip": "图像保存格式。原格式：保持原始图像格式；jpg/webp：标准有损压缩格式，适合照片；png：无损压缩格式，支持透明度，适合图形和截图。"}),
                 "JPG_WEBP_压缩质量": ("INT", {"default": 100, "min": 1, "max": 100, "step": 1, "description": "仅jpg/webp有效", "tooltip": "JPG和WEBP格式的压缩质量（1-100）。数值越高，图像质量越好，文件越大。推荐设置：照片用85-95，网页用70-85，测试用50-70。PNG格式此设置无效。"}),
+                "保存元数据": ("BOOLEAN", {"default": True, "label_on": "开启", "label_off": "关闭", "tooltip": "开启后保存图片元数据信息（如生成参数、工作流信息等），并自动使用PNG格式保存。关闭则不保存元数据，可使用任意格式。"}),
             },
             "optional": {
                 "相对路径列表": ("LIST", {"default": None, "description": "可选：连接时使用原始路径，不连接时使用默认文件名", "tooltip": "可选的相对路径列表输入。如果连接此端口，将优先使用提供的路径列表保存图像，保持原始目录结构；不连接时将使用默认的文件名生成规则。"}),
+            },
+            "hidden": {
+                "prompt": "PROMPT",
+                "extra_pnginfo": "EXTRA_PNGINFO",
             }
         }
 
@@ -445,7 +450,7 @@ class ImageDirectorySaver:
     CATEGORY = "目录加载与保存"
     DESCRIPTION = "批量保存图像到指定目录，保持原始相对路径结构"
 
-    def save_images(self, 图像批量, 输出目录, 覆盖已存在文件, 保存格式, JPG_WEBP_压缩质量, 相对路径列表=None):
+    def save_images(self, 图像批量, 输出目录, 覆盖已存在文件, 保存格式, JPG_WEBP_压缩质量, 保存元数据, 相对路径列表=None, prompt=None, extra_pnginfo=None):
         """
         批量保存图像到指定目录，保持原始相对路径结构
         
@@ -455,7 +460,10 @@ class ImageDirectorySaver:
             覆盖已存在文件 (bool): 是否覆盖已存在的同名文件
             保存格式 (str): 保存格式，可选值："原格式"、"jpg"、"png"、"webp"
             JPG_WEBP_压缩质量 (int): JPG和WEBP格式的压缩质量（1-100）
+            保存元数据 (bool): 是否保存元数据信息
             相对路径列表 (list, optional): 相对路径列表，保持原始目录结构
+            prompt (dict, optional): 工作流提示词信息
+            extra_pnginfo (dict, optional): 额外的PNG信息，包含完整工作流数据
         
         Returns:
             tuple: 空元组，此节点无返回值
@@ -469,6 +477,11 @@ class ImageDirectorySaver:
         """
         output_dir = Path(输出目录) if 输出目录.strip() else Path("output")
         output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # 如果开启保存元数据，强制使用PNG格式
+        if 保存元数据:
+            print("保存元数据已开启，自动使用PNG格式")
+            保存格式 = "png"
         
         # 如果没有提供相对路径列表，生成默认文件名
         if 相对路径列表 is None or len(相对路径列表) == 0:
@@ -534,6 +547,31 @@ class ImageDirectorySaver:
                 save_kwargs = {}
                 if 保存格式 in ["jpg", "webp"]:
                     save_kwargs["quality"] = JPG_WEBP_压缩质量
+                
+                # 如果开启保存元数据且使用PNG格式，添加元数据
+                if 保存元数据 and 保存格式 == "png":
+                    from datetime import datetime
+                    from PIL.PngImagePlugin import PngInfo
+                    pnginfo = PngInfo()
+                    
+                    # 基础元数据
+                    pnginfo.add_text("Software", "ComfyUI zyf_image_directory_nodes")
+                    pnginfo.add_text("Creation Time", datetime.now().isoformat())
+                    pnginfo.add_text("Node", "ImageDirectorySaver")
+                    pnginfo.add_text("Metadata Enabled", "true")
+                    
+                    # 工作流元数据
+                    if prompt is not None:
+                        import json
+                        pnginfo.add_text("prompt", json.dumps(prompt))
+                    if extra_pnginfo is not None:
+                        import json
+                        for key, value in extra_pnginfo.items():
+                            pnginfo.add_text(key, json.dumps(value))
+                    
+                    save_kwargs["pnginfo"] = pnginfo
+                    print(f"已添加完整工作流元数据到: {output_path}")
+                
                 img.save(output_path, **save_kwargs)
                 saved_count += 1
                 print(f"已保存图像: {output_path}")
@@ -556,9 +594,14 @@ class ImageSaveWithPreview:
                 "覆盖已存在文件": ("BOOLEAN", {"default": False, "label_on": "是", "label_off": "否", "tooltip": "当目标位置已存在同名文件时是否覆盖。开启后将直接覆盖已存在的文件；关闭则自动生成不重复的文件名（添加数字后缀）避免覆盖。"}),
                 "保存格式": (["原格式", "jpg", "png", "webp"], {"default": "原格式", "tooltip": "图像保存格式。原格式：保持原始图像格式；jpg/webp：标准有损压缩格式，适合照片；png：无损压缩格式，支持透明度，适合图形和截图。"}),
                 "压缩质量": ("INT", {"default": 100, "min": 1, "max": 100, "step": 1, "description": "仅jpg/webp有效", "tooltip": "JPG和WEBP格式的压缩质量（1-100）。数值越高，图像质量越好，文件越大。推荐设置：照片用85-95，网页用70-85，测试用50-70。PNG格式此设置无效。"}),
+                "保存元数据": ("BOOLEAN", {"default": True, "label_on": "开启", "label_off": "关闭", "tooltip": "开启后保存图片元数据信息（如生成参数、工作流信息等），并自动使用PNG格式保存。关闭则不保存元数据，可使用任意格式。"}),
             },
             "optional": {
                 "filename_text": ("STRING", {"default": "", "description": "从加载图像节点连接的文件名文本，不连接则使用自动生成的文件名", "tooltip": "从图像加载节点连接的文件名文本。如果连接此端口，将使用提供的前缀名称生成文件；不连接则使用自动生成的默认文件名（如frame_0001.png）。"}),
+            },
+            "hidden": {
+                "prompt": "PROMPT",
+                "extra_pnginfo": "EXTRA_PNGINFO",
             }
         }
 
@@ -569,7 +612,7 @@ class ImageSaveWithPreview:
     CATEGORY = "目录加载与保存"
     DESCRIPTION = "保存图像到指定路径并提供预览功能，支持批量保存视频帧序列和单张图像"
 
-    def save_and_preview(self, 图像, 保存路径, 覆盖已存在文件, 保存格式, 压缩质量, filename_text=""):
+    def save_and_preview(self, 图像, 保存路径, 覆盖已存在文件, 保存格式, 压缩质量, 保存元数据, filename_text="", prompt=None, extra_pnginfo=None):
         """
         保存图像到指定路径并提供预览功能，支持批量保存视频帧序列和单张图像
         
@@ -579,7 +622,10 @@ class ImageSaveWithPreview:
             覆盖已存在文件 (bool): 是否覆盖已存在的同名文件
             保存格式 (str): 保存格式，可选值："原格式"、"jpg"、"png"、"webp"
             压缩质量 (int): JPG和WEBP格式的压缩质量（1-100）
+            保存元数据 (bool): 是否保存元数据信息
             filename_text (str, optional): 从图像加载节点连接的文件名文本
+            prompt (dict, optional): 工作流提示词信息
+            extra_pnginfo (dict, optional): 额外的PNG信息，包含完整工作流数据
         
         Returns:
             tuple: 包含以下元素的元组
@@ -602,6 +648,11 @@ class ImageSaveWithPreview:
         # 处理保存路径
         save_dir = Path(保存路径) if 保存路径.strip() else Path("output")
         save_dir.mkdir(parents=True, exist_ok=True)
+        
+        # 如果开启保存元数据，强制使用PNG格式
+        if 保存元数据:
+            print("保存元数据已开启，自动使用PNG格式")
+            保存格式 = "png"
 
         # 检查是批量图像还是单张图像
         is_batch = 图像.ndim == 4 and 图像.shape[0] > 1
@@ -670,6 +721,30 @@ class ImageSaveWithPreview:
                         if 保存格式 in ["jpg", "webp"]:
                             save_kwargs["quality"] = 压缩质量
                         save_format = 'WebP' if 保存格式 == 'webp' else (保存格式.upper() if 保存格式 != 'jpg' else 'JPEG')
+                    
+                    # 如果开启保存元数据且使用PNG格式，添加元数据
+                    if 保存元数据 and save_format == 'PNG':
+                        from datetime import datetime
+                        from PIL.PngImagePlugin import PngInfo
+                        pnginfo = PngInfo()
+                        
+                        # 基础元数据
+                        pnginfo.add_text("Software", "ComfyUI zyf_image_directory_nodes")
+                        pnginfo.add_text("Creation Time", datetime.now().isoformat())
+                        pnginfo.add_text("Node", "ImageSaveWithPreview")
+                        pnginfo.add_text("Metadata Enabled", "true")
+                        
+                        # 工作流元数据
+                        if prompt is not None:
+                            import json
+                            pnginfo.add_text("prompt", json.dumps(prompt))
+                        if extra_pnginfo is not None:
+                            import json
+                            for key, value in extra_pnginfo.items():
+                                pnginfo.add_text(key, json.dumps(value))
+                        
+                        save_kwargs["pnginfo"] = pnginfo
+                        print(f"[批量保存] 已添加完整工作流元数据到: {output_path}")
                     
                     img.save(output_path, format=save_format, **save_kwargs)
                     saved_count += 1
@@ -774,6 +849,30 @@ class ImageSaveWithPreview:
             # 如果文件名没有扩展名，则根据保存格式添加
             if not output_path.suffix:
                 output_path = output_path.with_suffix(f".{save_format.lower()}")
+            
+            # 如果开启保存元数据且使用PNG格式，添加元数据
+            if 保存元数据 and save_format == 'PNG':
+                from datetime import datetime
+                from PIL.PngImagePlugin import PngInfo
+                pnginfo = PngInfo()
+                
+                # 基础元数据
+                pnginfo.add_text("Software", "ComfyUI zyf_image_directory_nodes")
+                pnginfo.add_text("Creation Time", datetime.now().isoformat())
+                pnginfo.add_text("Node", "ImageSaveWithPreview")
+                pnginfo.add_text("Metadata Enabled", "true")
+                
+                # 工作流元数据
+                if prompt is not None:
+                    import json
+                    pnginfo.add_text("prompt", json.dumps(prompt))
+                if extra_pnginfo is not None:
+                    import json
+                    for key, value in extra_pnginfo.items():
+                        pnginfo.add_text(key, json.dumps(value))
+                
+                save_kwargs["pnginfo"] = pnginfo
+                print(f"已添加完整工作流元数据到: {output_path}")
             
             img.save(output_path, format=save_format, **save_kwargs)
             print(f"图像已保存: {output_path}")
