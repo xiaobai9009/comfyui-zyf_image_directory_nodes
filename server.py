@@ -9,6 +9,8 @@ from concurrent.futures import ThreadPoolExecutor
 import server
 from aiohttp import web
 
+from .image_directory_nodes import count_directory_files
+
 # 线程池用于执行阻塞操作
 _executor = ThreadPoolExecutor(max_workers=2)
 
@@ -173,6 +175,28 @@ async def browse_folder(request):
     except Exception as e:
         import traceback
         print(f"browse_folder 错误: {traceback.format_exc()}")
+        return web.json_response({"error": str(e)}, status=500)
+
+
+@server.PromptServer.instance.routes.post("/zyf_image_directory/count")
+async def count_files(request):
+    """统计目录中匹配的图像/视频文件总数，供前端即时显示。"""
+    try:
+        data = await request.json()
+        kind = data.get("kind", "image")
+        目录路径 = data.get("目录路径", "")
+        递归搜索子目录 = bool(data.get("递归搜索子目录", True))
+        文件扩展名过滤 = data.get("文件扩展名过滤", "")
+        排序方法 = data.get("排序方法", "按名称")
+        loop = asyncio.get_event_loop()
+        count = await loop.run_in_executor(
+            _executor,
+            lambda: count_directory_files(kind, 目录路径, 递归搜索子目录, 文件扩展名过滤, 排序方法),
+        )
+        return web.json_response({"count": count})
+    except Exception as e:
+        import traceback
+        print(f"count_files 错误: {traceback.format_exc()}")
         return web.json_response({"error": str(e)}, status=500)
 
 
